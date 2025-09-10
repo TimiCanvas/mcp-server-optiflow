@@ -3,8 +3,7 @@ import json
 import re
 from dotenv import load_dotenv
 from openai import AzureOpenAI
-from mcp.server.fastmcp import FastMCP
-import uvicorn
+from mcp.server.fastmcp import FastMCP  # removed make_fastapi_app
 
 # Load environment variables
 load_dotenv()
@@ -39,8 +38,8 @@ server = FastMCP("mcp-server-optiflow")
 
 def classify_intent(message: str) -> str:
     system_prompt = (
-        "You're a friendly HR router or classifier, respond to greetings and small talks, "
-        "then classify the message into one of the following only: "
+        "You're a friendly HR router or classifier, respond to greetings and small talks,"
+        " then classify message received into one of the following only: "
         "onboarding, leave_request, pulse_check.\n"
         "Examples:\n"
         "I want to take Monday off => leave_request\n"
@@ -96,9 +95,7 @@ def get_webhook(intent: str) -> str:
     return WEBHOOKS.get(intent, "")
 
 # -----------------------------
-# Run MCP server (FastAPI/uvicorn)
+# Run MCP server
 # -----------------------------
-app = make_fastapi_app(server)
-
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
+    server.run()  # no make_fastapi_app
