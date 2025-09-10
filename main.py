@@ -117,5 +117,15 @@ def confirm_routing(intent: str, data: dict, confirm: bool = False) -> str:
 # Run MCP server
 # -----------------------------
 if __name__ == "__main__":
-    # This runs the server directly (no FastAPI)
-    server.run()
+    import uvicorn
+    from fastapi import FastAPI
+    from mcp.server.fastmcp import FastMCP
+
+    # Wrap MCP in FastAPI manually
+    app = FastAPI()
+
+    # Mount FastMCP’s ASGI app
+    app.mount("/", server.app)
+
+    # Run Uvicorn HTTP server (Railway expects this)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
