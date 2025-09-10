@@ -3,7 +3,7 @@ import json
 import re
 from dotenv import load_dotenv
 from openai import AzureOpenAI
-from mcp.server.fastmcp import FastMCP, make_fastapi_app
+from mcp.server.fastmcp import FastMCP
 import uvicorn
 
 # Load environment variables
