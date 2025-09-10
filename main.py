@@ -115,14 +115,17 @@ def confirm_routing(intent: str, data: dict, confirm: bool = False) -> str:
 # -----------------------------
 # Run MCP server
 # -----------------------------
+# -----------------------------
+# Run MCP server
+# -----------------------------
 if __name__ == "__main__":
-    if os.getenv("RAILWAY_ENVIRONMENT"):  # ✅ running on Railway
-        from fastapi import FastAPI
-        import uvicorn
+    from mcp.server.fastmcp import make_fastapi_app
+    import uvicorn
+    import os
 
-        app = FastAPI()
-        app.mount("/", server.app)  # expose MCP server at root
+    # create a FastAPI app from the MCP server
+    app = make_fastapi_app(server)
 
-        uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
-    else:  # ✅ local dev / stdio
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
+else:  # ✅ local dev / stdio
         server.run()
