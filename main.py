@@ -35,7 +35,7 @@ REQUIRED_FIELDS = {
 }
 
 # Initialize MCP server
-server = FastMCP("mcp-server-optiflow")
+server = FastMCP("onboard")
 
 def classify_intent(message: str) -> str:
     system_prompt = (
