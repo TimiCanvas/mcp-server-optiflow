@@ -57,7 +57,6 @@ def classify_intent(message: str) -> str:
     )
     intent = response.choices[0].message.content.strip().lower()
     if intent not in WEBHOOKS:
-        # return small talk instead of raising error
         return f"smalltalk::{intent}"
     return intent
 
@@ -118,7 +117,5 @@ def confirm_routing(intent: str, data: dict, confirm: bool = False) -> str:
 # Run MCP server
 # -----------------------------
 if __name__ == "__main__":
-    # flatten routes → serve at "/"
-    app = make_fastapi_app(server)
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
+    # This runs the server directly (no FastAPI)
+    server.run()
