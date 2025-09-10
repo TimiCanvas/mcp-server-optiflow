@@ -1,9 +1,10 @@
 import os
 import json
 import re
+import requests
 from dotenv import load_dotenv
 from openai import AzureOpenAI
-from mcp.server.fastmcp import FastMCP  # removed make_fastapi_app
+from mcp.server.fastmcp import FastMCP, make_fastapi_app
 
 # Load environment variables
 load_dotenv()
@@ -38,8 +39,8 @@ server = FastMCP("mcp-server-optiflow")
 
 def classify_intent(message: str) -> str:
     system_prompt = (
-        "You're a friendly HR router or classifier, respond to greetings and small talks,"
-        " then classify message received into one of the following only: "
+        "You're a friendly HR assistant. Respond politely to greetings/small talk, "
+        "but also classify HR-related messages into one of the following only: "
         "onboarding, leave_request, pulse_check.\n"
         "Examples:\n"
         "I want to take Monday off => leave_request\n"
@@ -56,10 +57,14 @@ def classify_intent(message: str) -> str:
     )
     intent = response.choices[0].message.content.strip().lower()
     if intent not in WEBHOOKS:
-        raise ValueError(f"Invalid intent: {intent}")
+        # return small talk instead of raising error
+        return f"smalltalk::{intent}"
     return intent
 
 def extract_fields(intent: str, message: str) -> dict:
+    if intent not in REQUIRED_FIELDS:
+        return {}
+
     prompt = (
         f"You are extracting structured JSON from this HR message. Intent: {intent}. "
         f"Return ONLY a JSON with fields: {REQUIRED_FIELDS[intent]}"
@@ -94,8 +99,26 @@ def get_required_fields(intent: str) -> list:
 def get_webhook(intent: str) -> str:
     return WEBHOOKS.get(intent, "")
 
+@server.tool()
+def confirm_routing(intent: str, data: dict, confirm: bool = False) -> str:
+    """Ask for confirmation before sending data to the webhook."""
+    if not confirm:
+        return f"⚠️ Do you want me to send this {intent} data to {WEBHOOKS[intent]}? Reply 'yes' to confirm."
+    
+    try:
+        response = requests.post(WEBHOOKS[intent], json=data, timeout=10)
+        if response.status_code == 200:
+            return f"✅ Data successfully sent to {intent} webhook."
+        else:
+            return f"❌ Failed to send data to webhook. Status: {response.status_code}"
+    except Exception as e:
+        return f"❌ Error while sending to webhook: {e}"
+
 # -----------------------------
 # Run MCP server
 # -----------------------------
 if __name__ == "__main__":
-    server.run()  # no make_fastapi_app
+    # flatten routes → serve at "/"
+    app = make_fastapi_app(server)
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
