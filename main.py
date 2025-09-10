@@ -35,7 +35,7 @@ REQUIRED_FIELDS = {
 }
 
 # Initialize MCP server
-server = FastMCP("onboard")
+server = FastMCP("mcp-server-optiflow")
 
 def classify_intent(message: str) -> str:
     system_prompt = (
@@ -63,7 +63,6 @@ def classify_intent(message: str) -> str:
 def extract_fields(intent: str, message: str) -> dict:
     if intent not in REQUIRED_FIELDS:
         return {}
-
     prompt = (
         f"You are extracting structured JSON from this HR message. Intent: {intent}. "
         f"Return ONLY a JSON with fields: {REQUIRED_FIELDS[intent]}"
@@ -117,15 +116,13 @@ def confirm_routing(intent: str, data: dict, confirm: bool = False) -> str:
 # Run MCP server
 # -----------------------------
 if __name__ == "__main__":
-    import uvicorn
-    from fastapi import FastAPI
-    from mcp.server.fastmcp import FastMCP
+    if os.getenv("RAILWAY_ENVIRONMENT"):  # ✅ running on Railway
+        from fastapi import FastAPI
+        import uvicorn
 
-    # Wrap MCP in FastAPI manually
-    app = FastAPI()
+        app = FastAPI()
+        app.mount("/", server.app)  # expose MCP server at root
 
-    # Mount FastMCP’s ASGI app
-    app.mount("/", server.app)
-
-    # Run Uvicorn HTTP server (Railway expects this)
-    uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
+        uvicorn.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
+    else:  # ✅ local dev / stdio
+        server.run()
